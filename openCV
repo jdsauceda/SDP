@@ -12,8 +12,13 @@ flip=0  # Webcam=0 piCam=2
 # cam=cv2.VideoCapture(camSet)
 
 # Logitech C270 webcam first method, better for manipulations
-camSet='v4l2src device=/dev/video0 ! video/x-raw,width=640,height=360,framerate=30/1 ! nvvidconv flip-method='+str(flip)+' ! video/x-raw(memory:NVMM), format=I420, width='+str(dispW)+', height='+str(dispH)+' ! nvvidconv ! video/x-raw, format=BGRx ! videoconvert ! video/x-raw, format=BGR ! queue ! appsink'
+camSet='v4l2src device=/dev/video0 ! video/x-raw,width=640,height=360,framerate=15/1 ! nvvidconv flip-method='+str(flip)+' ! video/x-raw(memory:NVMM), format=I420, width='+str(dispW)+', height='+str(dispH)+' ! nvvidconv ! video/x-raw, format=BGRx ! videoconvert ! video/x-raw, format=BGR ! queue ! appsink'
 cam=cv2.VideoCapture(camSet)
+
+# VideoWriter to read from captured video file
+cam=cv2.VideoCapture('videos/myCam.avi')
+# VideoWriter to output captured source video
+#outVid=cv2.VideoWriter('videos/myCam.avi',cv2.VideoWriter_fourcc(*'XVID'),15,(dispW,dispH))      #reference from cwd
 
 # Logitech C270 webcam second method
 #cam=cv2.VideoCapture(0)             # Camera=0 if only one device connected
@@ -33,9 +38,13 @@ while True:
     frameSmall=cv2.resize(frame,(320,240))
     graySmall=cv2.resize(gray,(320,240))
 
+    # Write outVid object
+    #outVid.write(frame)
+
     if cv2.waitKey(1)==ord('q'):    # Press q in camera window to quit
         break
 
 # Release cam object and close windows
 cam.release()
+outVid.release()
 cv2.destroyAllWindows()
