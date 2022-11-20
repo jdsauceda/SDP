@@ -7,8 +7,9 @@ import time
 import serial  
 
 # Resize camera stream, higher resolutions decrease framerates
-width=1024
-height=768
+dispW=800
+dispH=600
+flip=0
 
 # GPIO board configuration
 GPIO.setmode(GPIO.BOARD)
@@ -21,11 +22,12 @@ serial_port = serial.Serial(
     parity = serial.PARITY_NONE,
     stopbits = serial.STOPBITS_ONE,
 )
+
 # Wait for port to initialize
 time.sleep(1)
 
 # Instantiate Camera object
-cam = jetson_utils.gstCamera(width,height,'0')
+cam = jetson_utils.gstCamera(dispW,dispH,'0')
 
 # Transfer learning image detection network (pass, fail)
 net = jetson_inference.imageNet(
@@ -40,44 +42,34 @@ net = jetson_inference.imageNet(
 
 # Use time library for fps calculation
 timeMark = time.time()
-# Filter to smooth images
+# Filter to smooth imagesq
 fpsFilter = 0
-# OpenCV standard font
+# OpenCV font
 font = cv2.FONT_HERSHEY_SIMPLEX
 
-
-
-# Don't know if this will work, need to test
-# Should start camera and then exit to main loop when 'q' pressed
 while True:
     # Capture frame, specify width and height
-    frame, width, height = cam.CaptureRGBA(zeroCopy=1)
-    # Display image as camera
-    cv2.imshow('Camera',frame)
-    # Move display to 0,0 area
-    cv2.moveWindow('Camera',0,0)
-    # Format text for openCV
-    cv2.putText(frame, 'Camera Test',(0,30),font,1,(0,200,255),2)
-
-    # Loop to exit from test camera
-    if cv2.waitKey(1) == ord('q'):
-        break
+    frame, dispW, dispH = cam.CaptureRGBA(zeroCopy=1)
+    # Convert cuda to numpy for openCV frame format
+    frame = jetson_utils.cudaToNumpy(frame,dispW,dispH,4)
+    frame = cv2.cvtColor(frame,cv2.COLOR_RGBA2BGR).astype(np.uint8)
+    cv2.imshow('Preview',frame)
 
 # Loop to display captured frames
 while True:
     # Capture frame, specify width and height
-    frame, width, height = cam.CaptureRGBA(zeroCopy=1)
-
-    # Network Classifier to return ID and confidence level
-    classID, confident = net.Classify(frame, width, height)
-    # Changes classID number into item name
-    item = net.GetClassDesc(classID)
+    frame, dispW, dispH = cam.CaptureRGBA(zeroCopy=1)
+    roi = frame
+    # # Network Classifier to return ID and confidence level
+    # classID, confident = net.Classify(frame, width, height)
+    # # Changes classID number into item name
+    # item = net.GetClassDesc(classID)
 
 
     # Write item to pico over UART
     # try:
     #     if item != 'mail':
-    serial_port.write(item.encode())
+    # serial_port.write(item.encode())
 
     # except:
     #     print('Continuing')
@@ -93,19 +85,33 @@ while True:
     fpsFilter = .95*fpsFilter + .05*fps
     # timeMark for Filter
     timeMark = time.time()
-    # Convert cuda to numqpy for openCV frame format
-    frame = jetson_utils.cudaToNumpy(frame,width,height,4)
+    # Convert cuda to numpy for openCV frame format
+    frame = jetson_utils.cudaToNumpy(frame,dispW,dispH,4)
     frame = cv2.cvtColor(frame,cv2.COLOR_RGBA2BGR).astype(np.uint8)
 
+
+    # Region of Interest   
+    # Network Classifier to return ID and confidence level
+    classID, confident = net.Classify(roi, dispW, dispH)
+    # Changes classID number into item name
+    item = net.GetClassDesc(classID)
+
+    # Convert cuda to numpy for openCV frame format
+    roi = jetson_utils.cudaToNumpy(roi,dispW,dispH,4)
+    roi = cv2.cvtColor(roi,cv2.COLOR_RGBA2BGR).astype(np.uint8)
+
+    
     # Format text for openCV
-    cv2.putText(frame, str(round(confident*100, ndigits=1)) + ' confidence ' + str(round(fpsFilter,1))+' fps '+  item,(0,30),font,1,(0,200,255),2)
+    cv2.putText(frame,str(round(confident*100, ndigits=1)) + ' confidence ' + str(round(fpsFilter,1))+' fps '+  item,(0,30),font,1,(0,200,255),2,True)
 
+    roi = frame[0:1024,412:612].copy()
     # Display image as camera
-    cv2.imshow('Camera', frame)
+    cv2.imshow('Camera',frame)
+    cv2.imshow('ROI', roi)
     # Move display to 0,0 area
-    cv2.moveWindow('Camera', 0, 0)
+    # cv2.moveWindow('Camera',0,0)
 
-    # Press keyboard 'q' to quit 
+    # Loop to exit from camera
     if cv2.waitKey(1) == ord('q'):
         break
 
@@ -113,4 +119,3 @@ while True:
 # Release and destroy windows
 cam.release()
 cv2.destroyAllWindows()
-
