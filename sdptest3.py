@@ -58,18 +58,20 @@ while True:
         frame = jetson_utils.cudaToNumpy(frame,dispW,dispH,4)
         frame = cv2.cvtColor(frame,cv2.COLOR_RGBA2BGR).astype(np.uint8)
         cv2.imshow('Preview',frame)
-        if cv2.waitKey(1) == ord('a'):
+        if cv2.waitKey(1) == ord('w'):
             preview = False
             wide_aoi = True
             slice_aoi = False
             cam.Close()
             cv2.destroyAllWindows()
-        if cv2.waitKey(1) == ord('r'):
+        elif cv2.waitKey(1) == ord('r'):
             preview = False
             wide_aoi = False
             slice_aoi =True
             cam.Close()
             cv2.destroyAllWindows()
+        elif cv2.waitKey(1) == ord('q'):
+            break
 
     if slice_aoi:
         frame, dispW, dispH = cam.CaptureRGBA(zeroCopy=1)
@@ -107,22 +109,21 @@ while True:
 
         # Display image as camera
         cv2.imshow('AOI',frame)
+        # Move display to 0,0 area
+        cv2.moveWindow('AOI',0,0)
+
         cv2.imshow('ROI', roi)
         # Move display to 0,0 area
-        cv2.moveWindow('ROI',350,0)
+        cv2.moveWindow('ROI',365,0)
         
-        if cv2.waitKey(1) == ord('r'):
+        if cv2.waitKey(1) == ord('w'):
             preview = False
-            aoi = False
-            roi = True
+            wide_aoi = True
+            slice_aoi = False
             cam.Close()
             cv2.destroyAllWindows()
-        elif cv2.waitKey(1) == ord('a'):
-            preview = False
-            aoi = True
-            roi = False
-            cam.Close()
-            cv2.destroyAllWindows()
+        elif cv2.waitKey(1) == ord('q'):
+            break
 
     if wide_aoi:
          # Capture frame, specify width and height
@@ -165,13 +166,14 @@ while True:
         cv2.imshow('Camera',frame)
         # Move display to 0,0 area
         cv2.moveWindow('Camera',0,0)
+        
         if cv2.waitKey(1) == ord('r'):
             preview = False
-            aoi = False
-            aoiroi = True
+            wide_aoi = False
+            slice_aoi = True
             cam.Close()
             cv2.destroyAllWindows()
-        if cv2.waitKey(1) == ord('q'):
+        elif cv2.waitKey(1) == ord('q'):
             break
 
 # Release and destroy windows  
