@@ -57,6 +57,7 @@ while True:
         frame, dispW, dispH = cam.CaptureRGBA(zeroCopy=1)
         frame = jetson_utils.cudaToNumpy(frame,dispW,dispH,4)
         frame = cv2.cvtColor(frame,cv2.COLOR_RGBA2BGR).astype(np.uint8)
+        cv2.putText(frame, 'q to quit, w for Wide mode, r for ROI mode',(0,590),font,1,(0,200,255),2)
         cv2.imshow('Preview',frame)
         if cv2.waitKey(1) == ord('w'):
             preview = False
@@ -94,6 +95,10 @@ while True:
         # Changes classID number into item name
         item = net.GetClassDesc(classID)
 
+        # Write to UART
+        print(item)
+        serial_port.write(item.encode())
+
         # Convert cuda to numpy for openCV frame format
         roi = jetson_utils.cudaToNumpy(roi,dispW,dispH,4)
         roi = cv2.cvtColor(roi,cv2.COLOR_RGBA2BGR).astype(np.uint8)
@@ -102,8 +107,8 @@ while True:
         frame=cv2.rectangle(frame,(300,0),(500,dispH),(160,160,160),2)
 
         # Format text for openCV
-        cv2.putText(frame,str(round(confident*100, ndigits=1)) + ' confidence ' + str(round(fpsFilter,1))+' fps '+  item,(0,30),font,1,(0,200,255),2)
-
+        cv2.putText(frame,str(round(confident*100, ndigits=1)) + ' confidence ' + str(round(fpsFilter,1))+ ' fps ' +item,(0,30),font,1,(0,200,255),2)
+        cv2.putText(frame, 'q to quit, w for Wide mode',(0,590),font,1,(0,200,255),2)
         # Crop frame for ROI
         roi = frame[0:600,300:500].copy()
 
@@ -112,9 +117,9 @@ while True:
         # Move display to 0,0 area
         cv2.moveWindow('AOI',0,0)
 
-        cv2.imshow('ROI', roi)
+        cv2.imshow('ROI AOI', roi)
         # Move display to 0,0 area
-        cv2.moveWindow('ROI',365,0)
+        cv2.moveWindow('ROI AOI',365,0)
         
         if cv2.waitKey(1) == ord('w'):
             preview = False
@@ -160,12 +165,12 @@ while True:
         frame = cv2.cvtColor(frame,cv2.COLOR_RGBA2BGR).astype(np.uint8)
 
         # Format text for openCV
-        cv2.putText(frame,str(round(confident*100, ndigits=1)) + ' confidence ' + str(round(fpsFilter,1))+' fps '+  item,(0,30),font,1,(0,200,255),2)
-
+        cv2.putText(frame,str(round(confident*100, ndigits=1)) + ' confidence ' + str(round(fpsFilter,1))+' fps ' + item,(0,30),font,1,(0,200,255),2)
+        cv2.putText(frame, 'q to quit, r for ROI mode',(0,590),font,1,(0,200,255),2)
         # Display image as camera
-        cv2.imshow('Camera',frame)
+        cv2.imshow('Wide AOI',frame)
         # Move display to 0,0 area
-        cv2.moveWindow('Camera',0,0)
+        cv2.moveWindow('Wide AOI',0,0)
         
         if cv2.waitKey(1) == ord('r'):
             preview = False
