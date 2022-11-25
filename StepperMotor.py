@@ -12,7 +12,7 @@ class STEPMOTOR:
         self.dir = Pin(dir_pin, Pin.OUT)
 
     def rotate(self, angle=0, rotation='cw'):
-        num_of_steps = int((angle - 0) * (200 - 0) /(360 - 0) + 0)
+        num_of_steps = map(angle, 0, 360, 0, 200)
         if rotation=='cw':
             self.dir.value(0)
             for i in range(0,num_of_steps,1):
