@@ -1,8 +1,9 @@
 from machine import Pin, UART
+import time
 from time import sleep, sleep_ms, sleep_us
 
 def map(x, in_min, in_max, out_min, out_max): 
-    return int((x - in_min) * (out_max - out_min) /
+        return int((x - in_min) * (out_max - out_min) /
                (in_max - in_min) + out_min)
     
 class STEPMOTOR:
@@ -11,7 +12,7 @@ class STEPMOTOR:
         self.dir = Pin(dir_pin, Pin.OUT)
 
     def rotate(self, angle=0, rotation='cw'):
-        num_of_steps = map(angle, 0, 360, 0, 200)
+        num_of_steps = int((angle - 0) * (200 - 0) /(360 - 0) + 0)
         if rotation=='cw':
             self.dir.value(0)
             for i in range(0,num_of_steps,1):
@@ -25,19 +26,15 @@ class STEPMOTOR:
                self.step.value(1)
                sleep_us(500)
                self.step.value(0)
-               sleep_us(500)       
-
-stepper = STEPMOTOR(step_pin=17, dir_pin=16)
+               sleep_us(500)
 
 # GPIO pins
 greenLED = Pin(0, Pin.OUT)
 yellowLED = Pin(2, Pin.OUT)
 redLED = Pin(4, Pin.OUT)
 
-#UART 0: Communication channel between boards
-# uart0 = UART(0, baudrate=115200, tx=Pin(12), rx=Pin(13), bits=8, parity=None, stop=1)
 #UART 1: Communication channel with motor
-uart1 = UART(1, baudrate=115200, tx=Pin(8), rx=Pin(9), bits=8, parity=None, stop=1)
+uart0 = UART(0, baudrate=115200, tx=Pin(12), rx=Pin(13), bits=8, parity=None, stop=1)
 sleep(1)
 
 # File for logging
@@ -62,23 +59,21 @@ def failureState(rcv):
         greenLED.value(0)
         yellowLED.value(0)
         
-def log(file, rcv):
-    file.write(str(rcv) + '\n')
+def log(file, x, rcv):
+    file.write(x + ' ' + str(rcv) + '\n')
     file.flush()
 
 # Loop
 while True:    
     # Read incoming UART
-    if uart1.any() > 0:
-        rcv = uart1.read()
-        print(rcv)
+    if uart0.any() > 0:
+        rcv = uart0.read(6)
         readyState(rcv)              #ready state
         warningState(rcv)            #warning state
         failureState(rcv)            #failure state
-        log(file, rcv)               #Logging
-        stepper.rotate(5760,'cw')    #stepper movement 360*16 = 5760
-        stepper.rotate(360,'ccw')   #stepper movement ccw
-        
-        
-
-
+        x = time.time()
+        print(str(x) + ' ' + str(rcv))
+        log(file, str(x), rcv)               #Logging
+#         stepper = STEPMOTOR(step_pin=17, dir_pin=16)
+#         stepper.rotate(5760,'cw')    #stepper movement 360*16 = 5760
+#         stepper.rotate(360,'ccw')   #stepper movement ccw
