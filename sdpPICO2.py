@@ -9,10 +9,10 @@ from time import sleep
 
 # ADC and variables for laser counter
 analog_value = machine.ADC(28)
-threadCount = 0
+oldThreadCount = 0
+newThreadCount = 0
 high = False
 low = False
-activty = False
 
 # LED for status
 statusLED = Pin(25, Pin.OUT)
@@ -27,7 +27,7 @@ uart0 = UART(0, baudrate=115200, tx=Pin(16), rx=Pin(17), bits=8, parity=None, st
 
 
 # File for logging
-file = open("test.txt", "w")
+file = open("count.txt", "w")
 
 
 def passState(rcv):
@@ -48,12 +48,11 @@ def failureState(rcv):
         greenLED.value(0)
         yellowLED.value(0)
         
-def log(file, x, rcv):
-    file.write(x + ' ' + str(rcv) + '\n')
-    file.flush()
+def log(file, oldThreadCount, newThreadCount):
+    if newThreadCount >= oldThreadCount:
+        file.write(str(newThreadCount) + '\n')
+        file.flush()
     
-# Start Timer
-t = time.time()
     
 # statusLED to report ready condition
 statusLED.value(1)
@@ -68,42 +67,38 @@ while True:
     reading = analog_value.read_u16()
     time.sleep(0.25)
     
-#     print("ADC: ", reading)			#debugging ADC reading
+    print("ADC: ", reading)                  #debugging ADC reading
     
-    if reading > 60000:
+    if reading > 9800: # value from photodiode
         high = True
-        time.sleep(0.025)				# timing for falling edge
+        time.sleep(0.1)                       # timing for falling edge
         reading = analog_value.read_u16()
-        if reading < 60000:
+        if reading < 9800:
             low = True
             high = False
-            time.sleep(0.025)			# timing for rising edge
+            time.sleep(0.1)                   # timing for rising edge
             reading = analog_value.read_u16()
-            if reading > 60000 and low == True:
-                threadCount += 1
+            if reading > 9800 and low == True:
+                oldThreadCount = newThreadCount
+                newThreadCount += 1
+                log(file, oldThreadCount, newThreadCount)        #log threadCount
                 low = False
                 yellowLED.value(0)
-                time.sleep(0.05)		# show yellow blink
+                time.sleep(0.05)                # show yellow blink
                 
 
-#     print('threads ' + str(threadCount)) 				#debugging threads
+    print('threads ' + str(newThreadCount))      #debugging threads
     
     # statusLED will flash during communication
     if uart0.any():
         statusLED.toggle()
-        rcv = uart0.read(4)			 #need to be aware of buffer size
+        rcv = uart0.read(4)              #need to be aware of buffer size
         
-#         print(rcv)					 #debugging UART
+#         print(rcv)                     #debugging UART
         
-        passState(rcv)              #ready state
-        countState(rcv)            #warning state
-        failureState(rcv)            #failure state
+        passState(rcv)                   #ready state
+        countState(rcv)                  #warning state
+        failureState(rcv)                #failure state
+#        uart0.write(str(newThreadCount))    #write threadCount to Nano
         
-        
-    # check timer for inactivity 
-#     t2 = time.time()
-#     t3 = t2 - t
-#     
-#     if t3 > 60:						#seconds to wait for response
-#         uart0.write(str(threadCount))# write threadCount to Nano
-#         break
+
