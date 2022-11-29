@@ -18,9 +18,11 @@ greenLED = Pin(0, Pin.OUT)
 yellowLED = Pin(2, Pin.OUT)
 redLED = Pin(4, Pin.OUT)
 
-#UART 1: Communication channel with motor
+#UART 0: Communication channel
 uart0 = UART(0, baudrate=115200, tx=Pin(16), rx=Pin(17), bits=8, parity=None, stop=1)
-sleep(1)
+#UART 0: Communication channel
+# uart1 = UART(1, baudrate=115200, tx=Pin(8), rx=Pin(9), bits=8, parity=None, stop=1)
+
 
 # File for logging
 file = open("test.txt", "w")
@@ -69,7 +71,7 @@ while True:
     reading = analog_value.read_u16()
     time.sleep(0.25)
     
-#     print("ADC: ", reading)			#debugging
+#     print("ADC: ", reading)			#debugging ADC reading
     
     if reading > 60000:
         high = True
@@ -87,14 +89,14 @@ while True:
                 time.sleep(0.05)		# show yellow blink
                 
 
-#     print(threadCount) 				#debugging
+#     print('threads ' + str(threadCount)) 				#debugging threads
     
     # statusLED will flash during communication
     if uart0.any() > 0:
         statusLED.toggle()
         rcv = uart0.read(4)			 #need to be aware of buffer size
         
-#         print(rcv)					 #debugging
+#         print(rcv)					 #debugging UART
         
         passState(rcv)              #ready state
         countState(rcv)            #warning state
@@ -102,4 +104,3 @@ while True:
         
         uart0.write(str(threadCount))# write threadCount to Nano
         
-
